@@ -6,7 +6,7 @@ import (
 )
 
 func TestNewEncryptedDataBagValue(t *testing.T) {
-  encryptedValues := testFixture()
+  encryptedValues := testEncryptedDataBagValueFixture()
   obj := NewEncryptedDataBagValue(encryptedValues)
 
 	if !bytes.Equal(encryptedValues["encryptedData"].([]byte), obj.encryptedData) {
@@ -38,10 +38,10 @@ func TestNewEncryptedDataBagValue_nil(t *testing.T) {
 }
 
 func TestValidateHmac(t *testing.T) {
-	obj := NewEncryptedDataBagValue(testFixture())
+	obj := NewEncryptedDataBagValue(testEncryptedDataBagValueFixture())
 
   // Should be good
-  err := obj.ValidateHmac(testSecret())
+  err := obj.ValidateHmac(testEncryptedDataBagSecret())
   if err != nil {
     t.Error(err)
   }
@@ -54,21 +54,21 @@ func TestValidateHmac(t *testing.T) {
 }
 
 func TestDecryptValue(t *testing.T) {
-  obj := NewEncryptedDataBagValue(testFixture())
+  obj := NewEncryptedDataBagValue(testEncryptedDataBagValueFixture())
 
-  val, err := obj.DecryptValue(testSecret())
+  val, err := obj.DecryptValue(testEncryptedDataBagSecret())
   if err != nil {
     t.Error(err)
   }
 
-  if val != testVal() {
-    t.Errorf("Got value: %v, expected value: %v\n", val, testVal())
+  if val != testEncryptedDataBagVal() {
+    t.Errorf("Got value: %v, expected value: %v\n", val, testEncryptedDataBagVal())
   }
 }
 
 // Helper functions
 
-func testFixture() map[string]interface{} {
+func testEncryptedDataBagValueFixture() map[string]interface{} {
   return map[string]interface{}{
 		"encryptedData": []byte("AKyDsX/eiYImvjJljM8By3zi6fR7ekqhqEY1sPSOYK0=\n"),
 		"hmac":          []byte("CDtQRHLtY1ohbnH27BEm6hxskEsj/lLa45SHHZHoABQ=\n"),
@@ -78,14 +78,14 @@ func testFixture() map[string]interface{} {
 	}
 }
 
-func testSecret() []byte {
+func testEncryptedDataBagSecret() []byte {
   return []byte("abcdef1234")
 }
 
-func testKey() string {
+func testEncryptedDataBagKey() string {
   return "hello"
 }
 
-func testVal() string {
+func testEncryptedDataBagVal() string {
   return "world"
 }
