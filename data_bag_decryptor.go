@@ -1,7 +1,7 @@
 package chef
 
 import (
-	_ "fmt"
+	"sync"
 )
 
 type DataBagDecryptor struct {
@@ -14,20 +14,35 @@ func (d *DataBagDecryptor) DecryptItem() (DataBagItem, error) {
 		"id": d.item["id"].(string),
 	}
 
+	var wg sync.WaitGroup
+	var mux sync.Mutex
+
 	for key, encryptedValue := range d.item {
 		if key == "id" {
 			continue
 		}
 
-		v := NewEncryptedDataBagValue(encryptedValue)
+		encryptedVal := NewEncryptedDataBagValue(encryptedValue)
+		wg.Add(1)
 
-		decryptedValue, err := v.DecryptValue(d.secret)
-		if err != nil {
-			return nil, err
-		}
+		go func(e *EncryptedDataBagValue, key string) {
+			ch := make(chan string)
 
-		item[key] = decryptedValue
+			go func(ch <-chan string) {
+				defer wg.Done()
+				val := <-ch
+
+				// Writing to map must be guarded against concurrency
+				mux.Lock()
+				item[key] = val
+				mux.Unlock()
+			}(ch)
+
+			val, _ := e.DecryptValue(d.secret)
+			ch <- val
+		}(encryptedVal, key)
 	}
 
+	wg.Wait()
 	return item, nil
 }

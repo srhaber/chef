@@ -18,15 +18,15 @@ func TestDecryptItem(t *testing.T) {
 	obj := dataBagItem.(map[string]string)
 
 	if obj["hello"] != "world" {
-		t.Error("Expected `hello: world`, got `hello %v`", obj["hello"])
+		t.Errorf("Expected `hello: world`, got `hello %v`", obj["hello"])
 	}
 
 	if obj["goodnight"] != "moon" {
-		t.Error("Expected `goodnight: moon`, got `goodnight %v`", obj["goodnight"])
+		t.Errorf("Expected `goodnight: moon`, got `goodnight %v`", obj["goodnight"])
 	}
 
 	if obj["yellow"] != "submarine" {
-		t.Error("Expected `yellow: submarine`, got `yellow %v`", obj["yellow"])
+		t.Errorf("Expected `yellow: submarine`, got `yellow %v`", obj["yellow"])
 	}
 }
 
