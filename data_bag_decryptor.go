@@ -1,5 +1,9 @@
 package chef
 
+import (
+	_ "fmt"
+)
+
 type DataBagDecryptor struct {
 	item   map[string]interface{}
 	secret []byte

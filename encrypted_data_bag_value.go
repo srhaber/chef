@@ -1,7 +1,7 @@
 package chef
 
 import (
-  "bytes"
+	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/hmac"
@@ -23,16 +23,31 @@ func NewEncryptedDataBagValue(encryptedValues interface{}) *EncryptedDataBagValu
 	if values, ok := encryptedValues.(map[string]interface{}); ok {
 		obj := new(EncryptedDataBagValue)
 
-		if v, ok := values["encryptedData"]; ok {
-			obj.encryptedData = v.([]byte)
+		if v, ok := values["encrypted_data"]; ok {
+			switch t := v.(type) {
+			case []byte:
+				obj.encryptedData = t
+			case string:
+				obj.encryptedData = []byte(t)
+			}
 		}
 
 		if v, ok := values["hmac"]; ok {
-			obj.hmac = v.([]byte)
+			switch t := v.(type) {
+			case []byte:
+				obj.hmac = t
+			case string:
+				obj.hmac = []byte(t)
+			}
 		}
 
 		if v, ok := values["iv"]; ok {
-			obj.iv = v.([]byte)
+			switch t := v.(type) {
+			case []byte:
+				obj.iv = t
+			case string:
+				obj.iv = []byte(t)
+			}
 		}
 
 		if v, ok := values["version"]; ok {
@@ -78,7 +93,7 @@ func (obj *EncryptedDataBagValue) DecryptValue(secret []byte) (string, error) {
 	mode := cipher.NewCBCDecrypter(block, ivBytes)
 	mode.CryptBlocks(encryptedDataBytes, encryptedDataBytes)
 
-  return obj.parseJSON(encryptedDataBytes)
+	return obj.parseJSON(encryptedDataBytes)
 }
 
 func (obj *EncryptedDataBagValue) ValidateHmac(secret []byte) error {
@@ -92,24 +107,33 @@ func (obj *EncryptedDataBagValue) ValidateHmac(secret []byte) error {
 	expectedHmacBytes := hmacHash.Sum(nil)
 
 	if !hmac.Equal(candidateHmacBytes, expectedHmacBytes) {
-		return fmt.Errorf("Error decrypting data bag value: invalid hmac. Most likely the provided key is incorrect")
+		return fmt.Errorf("Error decrypting data bag value: invalid hmac. Most likely the provided key is incorrect.")
 	}
 
 	return nil
 }
 
 func (obj *EncryptedDataBagValue) parseJSON(byteSlice []byte) (string, error) {
-  trimmedBytes := bytes.TrimRight(byteSlice, "\b")
+	reader := bytes.NewReader(byteSlice)
+	seenKey := false
 
-  var resultJson map[string]string
-  err := json.Unmarshal(trimmedBytes, &resultJson)
-  if err != nil {
-    return "", err
-  }
+	// JSON string is `{"json_wrapper":"the_value"}`
+	dec := json.NewDecoder(reader)
+	for {
+		t, err := dec.Token()
+		if err != nil {
+			return "", err
+		}
 
-  if result, ok := resultJson["json_wrapper"]; ok {
-    return result, nil
-  }
+		// If we have a string and...
+		if val, ok := t.(string); ok {
+			// If we've already seen the json_wrapper key, then assume we have the value
+			if seenKey {
+				return val, nil
+			}
+			seenKey = true
+		}
+	}
 
-  return "", fmt.Errorf("Unable to parse result JSON")
+	return "", fmt.Errorf("Unable to parse result JSON")
 }
